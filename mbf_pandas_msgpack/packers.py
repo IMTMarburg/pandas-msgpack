@@ -239,7 +239,11 @@ def read_msgpack(path_or_buf, encoding="utf-8", iterator=False, **kwargs):
     obj : type of object stored in file
 
     """
-    path_or_buf, *_ = get_filepath_or_buffer(path_or_buf)
+    path_or_buf = get_filepath_or_buffer(path_or_buf)
+    if hasattr(path_or_buf, 'filepath_or_buffer'):
+        path_or_buf = path_or_buf.filepath_or_buffer
+    else:
+        path_or_buf = path_or_buf[0]
     if iterator:
         return Iterator(path_or_buf)
 
