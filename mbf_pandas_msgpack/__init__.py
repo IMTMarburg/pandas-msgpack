@@ -20,7 +20,7 @@ from .packers import to_msgpack, read_msgpack
 #__version__ = versions.get("closest-tag", versions["version"])
 #__git_revision__ = versions["full-revisionid"]
 
-__version__ = '0.5'
+__version__ = '0.5.1'
 
 
 pandas.DataFrame.to_msgpack = lambda self, path=None, **kwargs: to_msgpack(path, self, **kwargs)
