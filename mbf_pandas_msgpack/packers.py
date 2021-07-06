@@ -103,6 +103,11 @@ from pandas.core.dtypes.generic import (
     ABCSeries,
 )
 
+if hasattr(np, 'sctypeDict'):
+    nptd = np.sctypeDict
+else:
+    nptd = np.typeDict
+
 # from old pandas.core.internals.blocks
 def _safe_reshape(arr, new_shape):
     """
@@ -301,7 +306,7 @@ def dtype_for(t):
     """ return my dtype mapping, whether number or name """
     if t in dtype_dict:
         return dtype_dict[t]
-    return np.typeDict.get(t, t)
+    return nptd.get(t, t)
 
 
 c2f_dict = {"complex": np.float64, "complex128": np.float64, "complex64": np.float32}
@@ -317,7 +322,7 @@ def c2f(r, i, ctype_name):
     """
 
     ftype = c2f_dict[ctype_name]
-    return np.typeDict[ctype_name](ftype(r) + 1j * ftype(i))
+    return nptd[ctype_name](ftype(r) + 1j * ftype(i))
 
 
 def convert(values):
@@ -672,19 +677,23 @@ def decode(obj):
                 placement = b[u"locs"]
             else:
                 placement = axes[0].get_indexer(b[u"items"])
-            klass  = getattr(internals, b[u"klass"])
+            try:
+                klass  = getattr(internals, b[u"klass"])
+            except AttributeError:
+                klass  = getattr(internals.blocks, b[u"klass"])
+
             if klass == DatetimeTZBlock:
                 raise ValueError("Lost the ability to parse datetime with timezone. Sorry")
                 
             return make_block(
                 values=values.copy(),
-                klass=getattr(internals, b[u"klass"]),
+                klass=klass,
                 placement=placement,
                 dtype=b[u"dtype"],
             )
 
         blocks = [create_block(b) for b in obj[u"blocks"]]
-        return globals()[obj[u"klass"]](BlockManager(blocks, axes))
+        return globals()[obj[u"klass"]](BlockManager(blocks, list(axes)))
     elif typ == u"datetime":
         return parse(obj[u"data"])
     elif typ == u"datetime64":
@@ -718,7 +727,7 @@ def decode(obj):
         return globals()[obj[u"klass"]](obj[u"length"], obj[u"indices"])
     elif typ == u"ndarray":
         return unconvert(
-            obj[u"data"], np.typeDict[obj[u"dtype"]], obj.get(u"compress")
+            obj[u"data"], nptd[obj[u"dtype"]], obj.get(u"compress")
         ).reshape(obj[u"shape"])
     elif typ == u"np_scalar":
         if obj.get(u"sub_typ") == u"np_complex":
