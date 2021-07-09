@@ -680,7 +680,13 @@ def decode(obj):
             try:
                 klass  = getattr(internals, b[u"klass"])
             except AttributeError:
-                klass  = getattr(internals.blocks, b[u"klass"])
+                try:
+                    klass  = getattr(internals.blocks, b[u"klass"])
+                except AttributeError:
+                    if b[u"klass"] in ('FloatBlock', 'IntBlock'):
+                        klass = internals.NumericBlock
+                    else:
+                        raise
 
             if klass == DatetimeTZBlock:
                 raise ValueError("Lost the ability to parse datetime with timezone. Sorry")
